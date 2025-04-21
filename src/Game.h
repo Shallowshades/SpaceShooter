@@ -1,18 +1,14 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <iostream>
-#include <SDL3/SDL.h>
 #include "Scene.h"
-#include "SceneMain.h"
+#include "SDL.h"
+
 
 class Game {
 public:
-    static Game& getInstance() {
-        static Game instance;
-        return instance;
-    }
-
+    static Game& getInstance();
+public:
     Game();
     ~Game();
     void run();
@@ -23,10 +19,15 @@ public:
     void update();
     void render();
 private:
-    bool isRunning;
-    Scene* currentScene;
-    SDL_Window* window;
-    SDL_Renderer* renderer;
+    Game(const Game&) = delete;
+    Game& operator=(const Game&) = delete;
+private:
+    bool isRunning;             // 游戏是否运行
+    Scene* currentScene;        // 当前场景
+    SDL_Window* window;         // 窗口
+    SDL_Renderer* renderer;     // 渲染器
+    int32_t screenHeight;       // 窗口高度
+    int32_t screenWidth;        // 窗口宽度
 };
 
 #endif

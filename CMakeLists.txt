@@ -34,8 +34,18 @@ set(TARGET ${PROJECT_NAME}-${CMAKE_SYSTEM_NAME})
 #     link_directories("/usr/lib/x86_64-linux-gnu")
 # endif()
 
+# 库校验
+message(STATUS "SDL2_libraries: ${SDL2_LIBRARIES}")
+message(STATUS "SDL2_image: ${SDL2_IMAGE_LIBRARIES}")
+message(STATUS "SDL2_ttf: ${SDL2_TTF_LIBRARIES}")
+message(STATUS "SDL2_mixer libraries: ${SDL2_MIXER_LIBRARIES}")
+
 # 查找并载入Cmake预设 (PATH)
-find_package(SDL3 REQUIRED)
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(SDL2_ttf REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+
 
 # 添加可执行文件
 add_executable(${TARGET}
@@ -46,4 +56,13 @@ add_executable(${TARGET}
                         )
 
 # 链接库
-target_link_libraries(${TARGET} ${SDL3_LIBRARIES})
+target_link_libraries(${TARGET} 
+                        ${SDL2_LIBRARIES}
+                        ${SDL2_IMAGE_LIBRARIES}
+                        ${SDL2_TTF_LIBRARIES}
+                        ${SDL2_MIXER_LIBRARIES}
+                        )
+
+if (MSVC)
+    target_link_options(${TARGET} PRIVATE /SUBSYSTEM:WINDOWS)
+endif()

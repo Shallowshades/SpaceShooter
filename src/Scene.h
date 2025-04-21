@@ -1,6 +1,9 @@
 #ifndef SECNE_H
 #define SECNE_H
 
+#include <SDL.h>
+
+
 class Scene {
 public:
     Scene() = default;

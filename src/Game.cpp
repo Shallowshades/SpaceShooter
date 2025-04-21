@@ -1,8 +1,20 @@
 #include "Game.h"
 #include "SceneMain.h"
 
-Game::Game() {
+// 获取游戏单例
+Game& Game::getInstance() {
+    static Game instance;
+    return instance;
+}
 
+// 初始化
+Game::Game()
+    : isRunning(true),
+    window(nullptr),
+    renderer(nullptr),
+    currentScene(nullptr),
+    screenHeight(800),
+    screenWidth(600) {
 }
 
 Game::~Game() {
@@ -23,21 +35,20 @@ void Game::run() {
 
 void Game::init() {
     // SDL 初始化
-    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC
-        | SDL_INIT_GAMEPAD | SDL_INIT_EVENTS) == false) {
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_Init Error: %s", SDL_GetError());
         isRunning = false;
         return;
     }
     // 创建窗口
-    window = SDL_CreateWindow("Shooter", 800, 600, 0);
+    window = SDL_CreateWindow("Shooter", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_CreateWindow Error: %s", SDL_GetError());
         isRunning = false;
         return;
     }
     // 创建渲染器
-    renderer = SDL_CreateRenderer(window, nullptr);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_CreateRenderer Error: %s", SDL_GetError());
         isRunning = false;
@@ -48,6 +59,11 @@ void Game::init() {
 }
 
 void Game::clean() {
+    if (currentScene != nullptr) {
+        currentScene->clean();
+        delete currentScene;
+        currentScene = nullptr;
+    }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -64,7 +80,7 @@ void Game::changeScene(Scene* scene) {
 
 void Game::handleEvent(SDL_Event* event) {
     while (SDL_PollEvent(event)) {
-        if (event->type == SDL_EVENT_QUIT) {
+        if (event->type == SDL_QUIT) {
             isRunning = false;
         }
         currentScene->handleEvent(event);
@@ -72,7 +88,7 @@ void Game::handleEvent(SDL_Event* event) {
 }
 
 void Game::update() {
-
+    currentScene->update();
 }
 
 void Game::render() {
