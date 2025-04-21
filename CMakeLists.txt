@@ -8,9 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 设置编译选项
 if(MSVC)
-    add_compile_options(/W4)
+    # add_compile_options(/W4)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    # add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # 设置输出路径
@@ -48,11 +48,12 @@ find_package(SDL2_mixer REQUIRED)
 
 
 # 添加可执行文件
-add_executable(${TARGET}
+add_executable(${TARGET} 
                         "src/main.cpp"
-                        "src/Game.cpp"
+                        "src/Scene.cpp"
                         "src/SceneMain.cpp"
-                        
+                        "src/SceneTitle.cpp"
+                        "src/SceneEnd.cpp"
                         )
 
 # 链接库
@@ -61,6 +62,9 @@ target_link_libraries(${TARGET}
                         ${SDL2_IMAGE_LIBRARIES}
                         ${SDL2_TTF_LIBRARIES}
                         ${SDL2_MIXER_LIBRARIES}
+                        SDL2_image::SDL2_image
+                        SDL2_ttf::SDL2_ttf
+                        SDL2_mixer::SDL2_mixer
                         )
 
 if (MSVC)
