@@ -21,13 +21,13 @@ void SceneTitle::update(float deltaTime) {
 
 void SceneTitle::render() {
     // Render title
-    std::string titleText = "Welcome to the Game!";
+    std::string titleText = "Space Shooter";
     game.renderTextCentered(titleText, 0.4f, true);
 
     // Render text
     if (timer < 0.5f) {
-        std::string instructions = "Press Enter to Start";
-        game.renderTextCentered("Press Enter to Start", 0.8f, false);
+        std::string instructions = "Press J to Start";
+        game.renderTextCentered(instructions, 0.8f, false);
     }
 }
 
