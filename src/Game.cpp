@@ -7,6 +7,10 @@
 #include <SDL_mixer.h>
 #include <fstream>
 
+Game& Game::getInstance() {
+    static Game instance;
+    return instance;
+}
 
 Game::Game()
 {
@@ -185,8 +189,8 @@ void Game::handleEvent(SDL_Event* event)
         }
         if (event->type == SDL_KEYDOWN) {
             if (event->key.keysym.scancode == SDL_SCANCODE_F4) {
-                isFullscreen = !isFullscreen;
-                if (isFullscreen) {
+                isFullScreen = !isFullScreen;
+                if (isFullScreen) {
                     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
                 }
                 else {
@@ -209,7 +213,7 @@ void Game::render()
     // 清空
     SDL_RenderClear(renderer);
     // 渲染星空背景
-    renderBackground();
+    backgroundRender();
 
     currentScene->render();
     // 显示更新
@@ -269,7 +273,7 @@ void Game::backgroundUpdate(float deltaTime)
     }
 }
 
-void Game::renderBackground()
+void Game::backgroundRender()
 {
     // 渲染远处的星星
     for (int posY = static_cast<int>(farStars.offset); posY < getWindowHeight(); posY += farStars.height) {
