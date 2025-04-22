@@ -99,6 +99,7 @@ void SceneMain::init()
     player.height /= 5;
     player.position.x = 1.f * (game.getWindowWidth() / 2 - player.width / 2);
     player.position.y = 1.f * (game.getWindowHeight() - player.height);
+    player.coolDown = 500;
 
     // 初始化模版
     projectilePlayerTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/laser-1.png");
