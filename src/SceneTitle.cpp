@@ -41,7 +41,7 @@ void SceneTitle::clean() {
 
 void SceneTitle::handleEvent(SDL_Event* event) {
     if (event->type == SDL_KEYDOWN) {
-        if (event->key.keysym.scancode == SDL_SCANCODE_KP_ENTER) {
+        if (event->key.keysym.scancode == SDL_SCANCODE_J) {
             // Change to main scene
             game.changeScene(new SceneMain());
         }

@@ -68,7 +68,7 @@ void SceneEnd::handleEvent(SDL_Event* event)
     }
     else {
         if (event->type == SDL_KEYDOWN) {
-            if (event->key.keysym.scancode == SDL_SCANCODE_KP_ENTER) {
+            if (event->key.keysym.scancode == SDL_SCANCODE_J) {
                 auto sceneMain = new SceneMain();
                 game.changeScene(sceneMain);
             }
@@ -113,7 +113,7 @@ void SceneEnd::renderPhase2()
         i++;
     }
     if (blinkTimer < 0.5f) {
-        game.renderTextCentered("Please Key Enter to Entry game", 0.85f, false);
+        game.renderTextCentered("Please Key J to Entry game", 0.85f, false);
     }
 }
 

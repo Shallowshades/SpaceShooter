@@ -13,6 +13,15 @@ Game& Game::getInstance() {
 }
 
 Game::Game()
+    : isRunning(true),
+    isFullScreen(false),
+    windowWidth(600),
+    windowHeight(800),
+    frameTime(0),
+    deltaTime(0),
+    finalScore(0),
+    currentScene(nullptr),
+    FPS(60)
 {
 }
 
