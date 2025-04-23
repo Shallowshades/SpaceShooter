@@ -5,6 +5,7 @@
 
 enum class ItemType {
     Life,
+    Boost,
     Shield,
     Time
 };
@@ -17,8 +18,21 @@ struct Player {
     int32_t speed = 300;
     int32_t currentHealth = 3;
     int32_t maxHealth = 3;
-    uint32_t coolDown = 0;
+    uint32_t coolDown = 500;
     uint32_t lastShootTime = 0;
+    uint32_t boostRateOfFire = 0;
+    uint32_t boostDamage = 0;
+    uint32_t boostSpeed = 0;
+    uint32_t boostProjectileNumber = 0;
+};
+
+struct Shield {
+    SDL_Texture* texture = nullptr;
+    SDL_FPoint position = { 0.f, 0.f };
+    int32_t width = 0;
+    int32_t height = 0;
+    uint32_t shieldTime = 0;
+    uint32_t shieldStartTime = 0;
 };
 
 struct Enemy {
