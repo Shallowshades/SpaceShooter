@@ -550,15 +550,12 @@ void SceneMain::enemyExplode(Enemy* enemy)
     float rate = dis(gen);
     if (rate > 0.9f) { // 10%概率掉落增强道具
         dropItem(enemy, ItemType::Boost);
-        std::cout << "Boost" << std::endl;
     }
     else if (rate > 0.7f) { // 20%概率掉落生命道具
         dropItem(enemy, ItemType::Life);
-        std::cout << "Life" << std::endl;
     }
     else if (rate > 0.4f) { // 30%概率掉落护盾道具
         dropItem(enemy, ItemType::Shield);
-        std::cout << "Shield" << std::endl;
     }
     score += 10;
     delete enemy;
@@ -693,25 +690,24 @@ void SceneMain::playerGetItem(Item* item)
         }
         break;
     case ItemType::Boost: {
-        // float rate = dis(gen);
-        // if (rate > 0.75) {
-        //     player.boostRateOfFire = std::clamp(player.boostRateOfFire + 100, 0u, 500u);
-        // }
-        // else if (rate > 0.5) {
-        //     player.boostSpeed = std::clamp(player.boostSpeed + 50, 0u, 300u);
-        // }
-        // else if (rate > 0.25) {
-        //     player.boostDamage = std::clamp(player.boostDamage + 1, 0u, 4u);
-        // }
-        // else {
-        player.boostProjectileNumber = std::clamp(player.boostProjectileNumber + 1, 0u, 3u);
-        // }
+        float rate = dis(gen);
+        if (rate > 0.75) {
+            player.boostRateOfFire = std::clamp(player.boostRateOfFire + 100, 0u, 500u);
+        }
+        else if (rate > 0.5) {
+            player.boostSpeed = std::clamp(player.boostSpeed + 50, 0u, 300u);
+        }
+        else if (rate > 0.25) {
+            player.boostDamage = std::clamp(player.boostDamage + 1, 0u, 4u);
+        }
+        else {
+            player.boostProjectileNumber = std::clamp(player.boostProjectileNumber + 1, 0u, 3u);
+        }
         break;
     }
     case ItemType::Shield:
         playerShield.shieldStartTime = SDL_GetTicks();
         playerShield.shieldTime = 5000;
-        std::cout << "Get Shield" << std::endl;
         break;
     default:
         break;
