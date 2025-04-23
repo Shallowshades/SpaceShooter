@@ -109,20 +109,20 @@ void Game::init()
 
     // 初始化背景卷轴
     nearStars.texture = IMG_LoadTexture(renderer, "assets/image/Stars-A.png");
-    if (nearStars.texture == NULL) {
+    if (nearStars.texture == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
         isRunning = false;
     }
-    SDL_QueryTexture(nearStars.texture, NULL, NULL, &nearStars.width, &nearStars.height);
+    SDL_QueryTexture(nearStars.texture, nullptr, nullptr, &nearStars.width, &nearStars.height);
     nearStars.height /= 2;
     nearStars.width /= 2;
 
     farStars.texture = IMG_LoadTexture(renderer, "assets/image/Stars-B.png");
-    if (farStars.texture == NULL) {
+    if (farStars.texture == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
         isRunning = false;
     }
-    SDL_QueryTexture(farStars.texture, NULL, NULL, &farStars.width, &farStars.height);
+    SDL_QueryTexture(farStars.texture, nullptr, nullptr, &farStars.width, &farStars.height);
     farStars.height /= 2;
     farStars.width /= 2;
     farStars.speed = 20;
@@ -245,7 +245,7 @@ SDL_Point Game::renderTextCentered(std::string text, float posY, bool isTitle)
                      y,
                      surface->w,
                      surface->h };
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    SDL_RenderCopy(renderer, texture, nullptr, &rect);
     SDL_DestroyTexture(texture);
     SDL_FreeSurface(surface);
     return { rect.x + rect.w, y };
@@ -263,7 +263,7 @@ void Game::renderTextPos(std::string text, int posX, int posY, bool isLeft)
     else {
         rect = { getWindowWidth() - posX - surface->w, posY, surface->w, surface->h };
     }
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    SDL_RenderCopy(renderer, texture, nullptr, &rect);
     SDL_DestroyTexture(texture);
     SDL_FreeSurface(surface);
 }
@@ -288,7 +288,7 @@ void Game::backgroundRender()
     for (int posY = static_cast<int>(farStars.offset); posY < getWindowHeight(); posY += farStars.height) {
         for (int posX = 0; posX < getWindowWidth(); posX += farStars.width) {
             SDL_Rect ds = { posX, posY, farStars.width, farStars.height };
-            SDL_RenderCopy(renderer, farStars.texture, NULL, &ds);
+            SDL_RenderCopy(renderer, farStars.texture, nullptr, &ds);
         }
     }
     // 渲染近处的星星

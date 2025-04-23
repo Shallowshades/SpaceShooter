@@ -25,6 +25,8 @@ public:
     virtual void handleEvent(SDL_Event*) override;
 private:
     // 渲染
+    void renderPlayer(); // 渲染玩家
+    void renderPlayerShield(); // 渲染护盾
     void renderItems(); // 渲染道具
     void renderEnemies(); // 渲染敌人
     void renderPlayerProjectiles(); // 渲染玩家子弹
@@ -35,6 +37,7 @@ private:
     void updateEnemies(float deltaTime); // 更新敌人
     void updateEnemyProjectiles(float deltaTime); // 更新敌人子弹
     void updatePlayer(float deltaTime); // 更新玩家
+    void updatePlayerShield(float deltaTime); // 更新玩家护盾
     void updatePlayerProjectiles(float deltaTime); // 更新玩家子弹
     void updateItems(float deltaTime); // 更新道具
     void updateExplosions(float deltaTime); // 更新爆炸
@@ -48,9 +51,10 @@ private:
     void shootEnemy(Enemy* enemy); // 敌人射击
     SDL_FPoint getDirection(Enemy* enemy); // 获取敌人射击方向
     void enemyExplode(Enemy* enemy); // 敌人爆炸
-    void dropItem(Enemy* enemy); // 敌人掉落道具
+    void dropItem(Enemy* enemy, ItemType type); // 敌人掉落道具
 private:
-    Player player;
+    Player player; // 玩家
+    Shield playerShield; // 玩家护盾
     Mix_Music* bgm = nullptr; // 音乐
     SDL_Texture* uiHealth;
     TTF_Font* scoreFont;
@@ -67,6 +71,8 @@ private:
     ProjectileEnemy projectileEnemyTemplate; // 敌人子弹模板
     Explosion explosionTemplate; // 爆炸模板
     Item itemLifeTemplate; // 生命道具模板
+    Item itemBoostTemplate; // 增强道具模板
+    Item itemShieldTemplate; // 护盾道具模板
 
     // Objects Capicity
     std::list<Enemy*> enemies; // 敌人列表

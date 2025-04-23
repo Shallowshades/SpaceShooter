@@ -6,6 +6,8 @@
 #include <SDL_image.h>
 #include <random>
 #include <cmath>
+#include <iostream>
+#include <algorithm>
 
 const float PI = acos(-1.0f);
 
@@ -21,6 +23,7 @@ void SceneMain::update(float deltaTime)
     spawEnemy();
     updateEnemies(deltaTime);
     updatePlayer(deltaTime);
+    updatePlayerShield(deltaTime);
     updateExplosions(deltaTime);
     updateItems(deltaTime);
     if (isDead) {
@@ -35,13 +38,9 @@ void SceneMain::render()
     //渲染敌机子弹
     renderEnemyProjectiles();
     // 渲染玩家
-    if (!isDead) {
-        SDL_Rect playerRect = { static_cast<int>(player.position.x),
-                        static_cast<int>(player.position.y),
-                        player.width,
-                        player.height };
-        SDL_RenderCopy(game.getRenderer(), player.texture, NULL, &playerRect);
-    }
+    renderPlayer();
+    // 渲染护盾
+    renderPlayerShield();
     // 渲染敌人
     renderEnemies();
     // 渲染物品
@@ -94,39 +93,60 @@ void SceneMain::init()
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load player texture: %s", SDL_GetError());
     }
-    SDL_QueryTexture(player.texture, NULL, NULL, &player.width, &player.height);
+    SDL_QueryTexture(player.texture, nullptr, nullptr, &player.width, &player.height);
     player.width /= 5;
     player.height /= 5;
     player.position.x = 1.f * (game.getWindowWidth() / 2 - player.width / 2);
     player.position.y = 1.f * (game.getWindowHeight() - player.height);
-    player.coolDown = 500;
+
+    playerShield.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/shield.png");
+    if (playerShield.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load player shield texture: %s", SDL_GetError());
+    }
+    SDL_QueryTexture(playerShield.texture, nullptr, nullptr, &playerShield.width, &playerShield.height);
+    playerShield.width /= 5;
+    playerShield.height /= 5;
+    playerShield.position.x = player.position.x + player.width / 2 - playerShield.width / 2;
+    playerShield.position.y = player.position.y - playerShield.height;
 
     // 初始化模版
     projectilePlayerTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/laser-1.png");
-    SDL_QueryTexture(projectilePlayerTemplate.texture, NULL, NULL, &projectilePlayerTemplate.width, &projectilePlayerTemplate.height);
+    SDL_QueryTexture(projectilePlayerTemplate.texture, nullptr, nullptr, &projectilePlayerTemplate.width, &projectilePlayerTemplate.height);
     projectilePlayerTemplate.width /= 4;
     projectilePlayerTemplate.height /= 4;
 
     enemyTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/insect-2.png");
-    SDL_QueryTexture(enemyTemplate.texture, NULL, NULL, &enemyTemplate.width, &enemyTemplate.height);
+    SDL_QueryTexture(enemyTemplate.texture, nullptr, nullptr, &enemyTemplate.width, &enemyTemplate.height);
     enemyTemplate.width /= 4;
     enemyTemplate.height /= 4;
 
     projectileEnemyTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/bullet-1.png");
-    SDL_QueryTexture(projectileEnemyTemplate.texture, NULL, NULL, &projectileEnemyTemplate.width, &projectileEnemyTemplate.height);
+    SDL_QueryTexture(projectileEnemyTemplate.texture, nullptr, nullptr, &projectileEnemyTemplate.width, &projectileEnemyTemplate.height);
     projectileEnemyTemplate.width /= 2;
     projectileEnemyTemplate.height /= 2;
 
     explosionTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/effect/explosion.png");
-    SDL_QueryTexture(explosionTemplate.texture, NULL, NULL, &explosionTemplate.width, &explosionTemplate.height);
+    SDL_QueryTexture(explosionTemplate.texture, nullptr, nullptr, &explosionTemplate.width, &explosionTemplate.height);
     explosionTemplate.totalFrame = explosionTemplate.width / explosionTemplate.height;
     explosionTemplate.height *= 2;
     explosionTemplate.width = explosionTemplate.height;
 
     itemLifeTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/bonus_life.png");
-    SDL_QueryTexture(itemLifeTemplate.texture, NULL, NULL, &itemLifeTemplate.width, &itemLifeTemplate.height);
+    SDL_QueryTexture(itemLifeTemplate.texture, nullptr, nullptr, &itemLifeTemplate.width, &itemLifeTemplate.height);
     itemLifeTemplate.width /= 4;
     itemLifeTemplate.height /= 4;
+
+    itemBoostTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/support.png");
+    SDL_QueryTexture(itemBoostTemplate.texture, nullptr, nullptr, &itemBoostTemplate.width, &itemBoostTemplate.height);
+    itemBoostTemplate.width /= 2;
+    itemBoostTemplate.height /= 2;
+    itemBoostTemplate.type = ItemType::Boost;
+
+    itemShieldTemplate.texture = IMG_LoadTexture(game.getRenderer(), "assets/image/bonus_shield.png");
+    SDL_QueryTexture(itemShieldTemplate.texture, nullptr, nullptr, &itemShieldTemplate.width, &itemShieldTemplate.height);
+    itemShieldTemplate.width /= 4;
+    itemShieldTemplate.height /= 4;
+    itemShieldTemplate.type = ItemType::Shield;
 }
 
 void SceneMain::clean()
@@ -218,18 +238,18 @@ void SceneMain::keyboardControl(float deltaTime)
     if (isDead) {
         return;
     }
-    auto keyboardState = SDL_GetKeyboardState(NULL);
+    auto keyboardState = SDL_GetKeyboardState(nullptr);
     if (keyboardState[SDL_SCANCODE_W]) {
-        player.position.y -= deltaTime * player.speed;
+        player.position.y -= deltaTime * player.speed + player.boostSpeed;
     }
     if (keyboardState[SDL_SCANCODE_S]) {
-        player.position.y += deltaTime * player.speed;
+        player.position.y += deltaTime * player.speed + player.boostSpeed;
     }
     if (keyboardState[SDL_SCANCODE_A]) {
-        player.position.x -= deltaTime * player.speed;
+        player.position.x -= deltaTime * player.speed + player.boostSpeed;
     }
     if (keyboardState[SDL_SCANCODE_D]) {
-        player.position.x += deltaTime * player.speed;
+        player.position.x += deltaTime * player.speed + player.boostSpeed;
     }
 
     // 限制飞机的移动范围
@@ -246,10 +266,11 @@ void SceneMain::keyboardControl(float deltaTime)
         player.position.y = 1.f * (game.getWindowHeight() - player.height);
     }
 
-    // 控制子弹发射
+    // 子弹发射
     if (keyboardState[SDL_SCANCODE_J]) {
         auto currentTime = SDL_GetTicks();
-        if (currentTime - player.lastShootTime > player.coolDown) {
+        // 控制射速
+        if (currentTime - player.lastShootTime > player.coolDown - player.boostRateOfFire) {
             shootPlayer();
             player.lastShootTime = currentTime;
         }
@@ -260,10 +281,13 @@ void SceneMain::keyboardControl(float deltaTime)
 void SceneMain::shootPlayer()
 {
     // 在这里实现发射子弹的逻辑
-    auto projectile = new ProjectilePlayer(projectilePlayerTemplate);
-    projectile->position.x = player.position.x + player.width / 2 - projectile->width / 2;
-    projectile->position.y = player.position.y;
-    projectilesPlayer.push_back(projectile);
+    // 控制子弹数量和位置
+    for (uint32_t i = 0; i < player.boostProjectileNumber + 1; ++i) {
+        auto projectile = new ProjectilePlayer(projectilePlayerTemplate);
+        projectile->position.x = player.position.x + player.width * (i + 1) / (player.boostProjectileNumber + 2) - projectile->width / 2;
+        projectile->position.y = player.position.y;
+        projectilesPlayer.push_back(projectile);
+    }
     Mix_PlayChannel(0, sounds["player_shoot"], 0);
 }
 
@@ -294,7 +318,8 @@ void SceneMain::updatePlayerProjectiles(float deltaTime)
                     projectile->height
                 };
                 if (SDL_HasIntersection(&enemyRect, &projectileRect)) {
-                    enemy->currentHealth -= projectile->damage;
+                    // 控制伤害
+                    enemy->currentHealth -= projectile->damage + player.boostDamage;
                     delete projectile;
                     it = projectilesPlayer.erase(it);
                     hit = true;
@@ -318,7 +343,7 @@ void SceneMain::renderPlayerProjectiles()
             projectile->width,
             projectile->height
         };
-        SDL_RenderCopy(game.getRenderer(), projectile->texture, NULL, &projectileRect);
+        SDL_RenderCopy(game.getRenderer(), projectile->texture, nullptr, &projectileRect);
     }
 }
 
@@ -331,9 +356,9 @@ void SceneMain::renderEnemyProjectiles()
             projectile->width,
             projectile->height
         };
-        // SDL_RenderCopy(game.getRenderer(), projectile->texture, NULL, &projectileRect);
+        // SDL_RenderCopy(game.getRenderer(), projectile->texture, nullptr, &projectileRect);
         float angle = atan2(projectile->direction.y, projectile->direction.x) * 180 / PI - 90;
-        SDL_RenderCopyEx(game.getRenderer(), projectile->texture, NULL, &projectileRect, angle, NULL, SDL_FLIP_NONE);
+        SDL_RenderCopyEx(game.getRenderer(), projectile->texture, nullptr, &projectileRect, angle, nullptr, SDL_FLIP_NONE);
     }
 }
 
@@ -411,7 +436,14 @@ void SceneMain::updateEnemyProjectiles(float deltaTime)
                 player.height
             };
             if (SDL_HasIntersection(&projectileRect, &playerRect) && !isDead) {
-                player.currentHealth -= projectile->damage;
+                auto currentTime = SDL_GetTicks();
+                // 护盾生效
+                if (currentTime - playerShield.shieldStartTime < playerShield.shieldTime) {
+                    playerShield.shieldTime = 0;
+                }
+                else {
+                    player.currentHealth -= projectile->damage;
+                }
                 delete projectile;
                 it = projectilesEnemy.erase(it);
                 Mix_PlayChannel(-1, sounds["hit"], 0);
@@ -455,10 +487,22 @@ void SceneMain::updatePlayer(float)
             player.height
         };
         if (SDL_HasIntersection(&playerRect, &enemyRect)) {
-            player.currentHealth -= 1;
+            auto currentTime = SDL_GetTicks();
+            // 护盾生效
+            if (currentTime - playerShield.shieldStartTime < playerShield.shieldTime) {
+                playerShield.shieldTime = 0;
+            }
+            else {
+                player.currentHealth -= 1;
+            }
             enemy->currentHealth = 0;
         }
     }
+}
+
+void SceneMain::updatePlayerShield(float deltaTime) {
+    playerShield.position.x = player.position.x + player.width / 2 - playerShield.width / 2;
+    playerShield.position.y = player.position.y - playerShield.height;
 }
 
 void SceneMain::renderEnemies()
@@ -470,7 +514,7 @@ void SceneMain::renderEnemies()
             enemy->width,
             enemy->height
         };
-        SDL_RenderCopy(game.getRenderer(), enemy->texture, NULL, &enemyRect);
+        SDL_RenderCopy(game.getRenderer(), enemy->texture, nullptr, &enemyRect);
     }
 }
 
@@ -503,8 +547,18 @@ void SceneMain::enemyExplode(Enemy* enemy)
     explosion->startTime = currentTime;
     explosions.push_back(explosion);
     Mix_PlayChannel(-1, sounds["enemy_explode"], 0);
-    if (dis(gen) < 0.5f) {
-        dropItem(enemy);
+    float rate = dis(gen);
+    if (rate > 0.9f) { // 10%概率掉落增强道具
+        dropItem(enemy, ItemType::Boost);
+        std::cout << "Boost" << std::endl;
+    }
+    else if (rate > 0.7f) { // 20%概率掉落生命道具
+        dropItem(enemy, ItemType::Life);
+        std::cout << "Life" << std::endl;
+    }
+    else if (rate > 0.4f) { // 30%概率掉落护盾道具
+        dropItem(enemy, ItemType::Shield);
+        std::cout << "Shield" << std::endl;
     }
     score += 10;
     delete enemy;
@@ -542,9 +596,24 @@ void SceneMain::renderExplosions()
     }
 }
 
-void SceneMain::dropItem(Enemy* enemy)
-{
-    auto item = new Item(itemLifeTemplate);
+void SceneMain::dropItem(Enemy* enemy, ItemType type) {
+    Item* item = nullptr;
+    switch (type) {
+    case ItemType::Life:
+        item = new Item(itemLifeTemplate);
+        break;
+    case ItemType::Boost:
+        item = new Item(itemBoostTemplate);
+        break;
+    case ItemType::Shield:
+        item = new Item(itemShieldTemplate);
+        break;
+    default:
+        break;
+    };
+    if (item == nullptr) {
+        return;
+    }
     item->position.x = enemy->position.x + enemy->width / 2 - item->width / 2;
     item->position.y = enemy->position.y + enemy->height / 2 - item->height / 2;
     float angle = dis(gen) * 2 * PI;
@@ -616,13 +685,58 @@ void SceneMain::updateItems(float deltaTime)
 void SceneMain::playerGetItem(Item* item)
 {
     score += 5;
-    if (item->type == ItemType::Life) {
+    switch (item->type) {
+    case ItemType::Life:
         player.currentHealth += 1;
         if (player.currentHealth > player.maxHealth) {
             player.currentHealth = player.maxHealth;
         }
+        break;
+    case ItemType::Boost: {
+        // float rate = dis(gen);
+        // if (rate > 0.75) {
+        //     player.boostRateOfFire = std::clamp(player.boostRateOfFire + 100, 0u, 500u);
+        // }
+        // else if (rate > 0.5) {
+        //     player.boostSpeed = std::clamp(player.boostSpeed + 50, 0u, 300u);
+        // }
+        // else if (rate > 0.25) {
+        //     player.boostDamage = std::clamp(player.boostDamage + 1, 0u, 4u);
+        // }
+        // else {
+        player.boostProjectileNumber = std::clamp(player.boostProjectileNumber + 1, 0u, 3u);
+        // }
+        break;
+    }
+    case ItemType::Shield:
+        playerShield.shieldStartTime = SDL_GetTicks();
+        playerShield.shieldTime = 5000;
+        std::cout << "Get Shield" << std::endl;
+        break;
+    default:
+        break;
     }
     Mix_PlayChannel(-1, sounds["get_item"], 0);
+}
+
+void SceneMain::renderPlayer() {
+    if (!isDead) {
+        SDL_Rect playerRect = { static_cast<int>(player.position.x),
+                        static_cast<int>(player.position.y),
+                        player.width,
+                        player.height };
+        SDL_RenderCopy(game.getRenderer(), player.texture, nullptr, &playerRect);
+    }
+}
+
+void SceneMain::renderPlayerShield() {
+    if (playerShield.shieldTime > 0 && SDL_GetTicks() - playerShield.shieldStartTime < playerShield.shieldTime) {
+        SDL_Rect rect = { static_cast<int>(playerShield.position.x),
+                        static_cast<int>(playerShield.position.y),
+                        playerShield.width,
+                        playerShield.height };
+        SDL_RenderCopy(game.getRenderer(), playerShield.texture, nullptr, &rect);
+    }
 }
 
 void SceneMain::renderItems()
@@ -635,7 +749,7 @@ void SceneMain::renderItems()
             item->width,
             item->height
         };
-        SDL_RenderCopy(game.getRenderer(), item->texture, NULL, &itemRect);
+        SDL_RenderCopy(game.getRenderer(), item->texture, nullptr, &itemRect);
     }
 }
 
@@ -649,13 +763,13 @@ void SceneMain::renderUI() {
     for (int i = 0; i < player.maxHealth; i++)
     {
         SDL_Rect rect = { x + i * offset, y, size, size };
-        SDL_RenderCopy(game.getRenderer(), uiHealth, NULL, &rect);
+        SDL_RenderCopy(game.getRenderer(), uiHealth, nullptr, &rect);
     }
     SDL_SetTextureColorMod(uiHealth, 255, 255, 255); // reset color
     for (int i = 0; i < player.currentHealth; i++)
     {
         SDL_Rect rect = { x + i * offset, y, size, size };
-        SDL_RenderCopy(game.getRenderer(), uiHealth, NULL, &rect);
+        SDL_RenderCopy(game.getRenderer(), uiHealth, nullptr, &rect);
     }
     // 渲染得分
     auto text = "SCORE:" + std::to_string(score);
@@ -663,7 +777,7 @@ void SceneMain::renderUI() {
     SDL_Surface* surface = TTF_RenderUTF8_Solid(scoreFont, text.c_str(), color);
     SDL_Texture* texture = SDL_CreateTextureFromSurface(game.getRenderer(), surface);
     SDL_Rect rect = { game.getWindowWidth() - 10 - surface->w, 10, surface->w, surface->h };
-    SDL_RenderCopy(game.getRenderer(), texture, NULL, &rect);
+    SDL_RenderCopy(game.getRenderer(), texture, nullptr, &rect);
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
 }
